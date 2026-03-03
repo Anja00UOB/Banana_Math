@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Play Game - Banana Math 🍌</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍌</text></svg>">
+</head>
+<body class="game-page">
+    <!-- Game Header -->
+    <header class="game-header">
+        <a href="index.html" class="back-btn">← Menu</a>
+        <div class="game-title">🍌 Banana Math</div>
+        <div class="game-timer" id="game-timer">
+            <span class="timer-icon">⏱️</span>
+            <span id="timer-display">30</span>
+        </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="game-main">
+        <div class="game-container">
+            <!-- Score Bar -->
+            <div class="score-bar">
+                <div class="score-item">
+                    <span class="score-label">Score</span>
+                    <span class="score-value" id="current-score">0</span>
+                </div>
+                <div class="score-item">
+                    <span class="score-label">Streak</span>
+                    <span class="score-value streak" id="current-streak">0</span>
+                </div>
+                <div class="score-item">
+                    <span class="score-label">Best Streak</span>
+                    <span class="score-value" id="best-streak">0</span>
+                </div>
+            </div>
+
+            <!-- Puzzle Section -->
+            <div class="puzzle-section">
+                <div class="puzzle-header">
+                    <span class="puzzle-number">Puzzle #<span id="puzzle-count">1</span></span>
+                    <span class="puzzle-difficulty" id="difficulty-badge">Easy</span>
+                </div>
+                
+                <div class="puzzle-image-container">
+                    <img id="puzzle-image" src="" alt="Banana Puzzle" />
+                    <div class="loading-spinner" id="loading-spinner">
+                        <div class="spinner"></div>
+                        <p>Loading puzzle...</p>
+                    </div>
+                </div>
+
+                <div class="puzzle-hint" id="puzzle-hint">
+                    💡 Solve the math problem in the image!
+                </div>
+            </div>
+
+            <!-- Answer Section -->
+            <div class="answer-section">
+                <div class="answer-input-container">
+                    <label for="answer-input">Your Answer:</label>
+                    <input type="number" id="answer-input" placeholder="?" autocomplete="off" />
+                </div>
+                <div class="answer-buttons">
+                    <button class="btn btn-submit" id="submit-btn" disabled>
+                        ✅ Submit
+                    </button>
+                    <button class="btn btn-skip" id="skip-btn">
+                        ⏭️ Skip
+                    </button>
+                </div>
+            </div>
+
+            <!-- Feedback -->
+            <div class="feedback-container" id="feedback-container">
+                <div class="feedback success" id="feedback-success">
+                    <span class="feedback-icon">🎉</span>
+                    <span class="feedback-text">Correct! +<span id="points-earned">10</span> points!</span>
+                </div>
+                <div class="feedback error" id="feedback-error">
+                    <span class="feedback-icon">😢</span>
+                    <span class="feedback-text">Wrong! Answer: <span id="correct-answer">0</span></span>
+                </div>
+            </div>
+
+            <!-- Game Over Modal -->
+            <div class="modal-overlay" id="game-over-modal">
+                <div class="modal">
+                    <div class="modal-icon">🏆</div>
+                    <h2>Game Over!</h2>
+                    <div class="final-score-display">
+                        <span class="final-label">Final Score</span>
+                        <span class="final-score" id="final-score">0</span>
+                    </div>
+                    <div class="final-stats-grid">
+                        <div class="final-stat">
+                            <span class="final-stat-value" id="final-puzzles">0</span>
+                            <span class="final-stat-label">Puzzles Solved</span>
+                        </div>
+                        <div class="final-stat">
+                            <span class="final-stat-value" id="final-streak">0</span>
+                            <span class="final-stat-label">Best Streak</span>
+                        </div>
+                        <div class="final-stat">
+                            <span class="final-stat-value" id="final-accuracy">0%</span>
+                            <span class="final-stat-label">Accuracy</span>
+                        </div>
+                    </div>
+                    <div class="new-high-score-badge" id="new-high-score-badge" style="display: none;">
+                        🌟 New High Score! 🌟
+                    </div>
+                    <div class="modal-buttons">
+                        <a href="game.html" class="btn btn-play">🔄 Play Again</a>
+                        <a href="index.html" class="btn btn-secondary">🏠 Menu</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Sound Effects -->
+    <audio id="sound-correct" preload="auto">
+        <source src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU" type="audio/wav">
+    </audio>
+    <audio id="sound-wrong" preload="auto">
+        <source src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU" type="audio/wav">
+    </audio>
+
+    <script src="script.js"></script>
+    <script>
+        // Game page specific initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            initGame();
+        });
+    </script>
+</body>
+</html>

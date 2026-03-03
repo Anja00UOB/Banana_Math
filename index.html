@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banana Math Challenge 🍌</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍌</text></svg>">
+</head>
+<body>
+    <!-- Floating Bananas Background -->
+    <div class="floating-bananas">
+        <span class="float-banana" style="left: 5%; top: 10%; animation-delay: 0s;">🍌</span>
+        <span class="float-banana" style="left: 15%; top: 80%; animation-delay: 1s;">🍌</span>
+        <span class="float-banana" style="left: 25%; top: 30%; animation-delay: 2s;">🍌</span>
+        <span class="float-banana" style="left: 40%; top: 70%; animation-delay: 0.5s;">🍌</span>
+        <span class="float-banana" style="left: 60%; top: 20%; animation-delay: 1.5s;">🍌</span>
+        <span class="float-banana" style="left: 75%; top: 85%; animation-delay: 2.5s;">🍌</span>
+        <span class="float-banana" style="left: 85%; top: 40%; animation-delay: 0.8s;">🍌</span>
+        <span class="float-banana" style="left: 92%; top: 60%; animation-delay: 1.8s;">🍌</span>
+    </div>
+
+    <div class="menu-container">
+        <div class="menu-logo">🍌</div>
+        <h1 class="menu-title">Banana Math</h1>
+        <p class="menu-subtitle">Challenge</p>
+
+        <div class="high-score-display">
+            <span class="high-score-label">🏆 Best Score</span>
+            <span class="high-score-value" id="menu-high-score">0</span>
+        </div>
+
+        <div class="menu-buttons">
+            <a href="game.html" class="btn btn-play">
+                <span>🎮</span> Play Now
+            </a>
+            <a href="howto.html" class="btn btn-secondary">
+                <span>📖</span> How to Play
+            </a>
+            <a href="scores.html" class="btn btn-secondary">
+                <span>🏅</span> Leaderboard
+            </a>
+        </div>
+
+        <div class="menu-stats">
+            <div class="stat-box">
+                <span class="stat-number" id="games-played">0</span>
+                <span class="stat-label">Games Played</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-number" id="total-correct">0</span>
+                <span class="stat-label">Total Solved</span>
+            </div>
+        </div>
+    </div>
+
+    <footer class="menu-footer">
+        <p>Powered by <a href="https://marcconrad.com/uob/banana/" target="_blank">Banana API</a></p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        // Menu specific initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            loadMenuStats();
+        });
+    </script>
+</body>
+</html>
