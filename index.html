@@ -8,65 +8,66 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍌</text></svg>">
 </head>
 <body>
-    <!-- Floating Bananas Background -->
     <div class="floating-bananas">
         <span class="float-banana" style="left: 5%; top: 10%; animation-delay: 0s;">🍌</span>
-        <span class="float-banana" style="left: 15%; top: 80%; animation-delay: 1s;">🍌</span>
-        <span class="float-banana" style="left: 25%; top: 30%; animation-delay: 2s;">🍌</span>
-        <span class="float-banana" style="left: 40%; top: 70%; animation-delay: 0.5s;">🍌</span>
         <span class="float-banana" style="left: 60%; top: 20%; animation-delay: 1.5s;">🍌</span>
-        <span class="float-banana" style="left: 75%; top: 85%; animation-delay: 2.5s;">🍌</span>
         <span class="float-banana" style="left: 85%; top: 40%; animation-delay: 0.8s;">🍌</span>
-        <span class="float-banana" style="left: 92%; top: 60%; animation-delay: 1.8s;">🍌</span>
     </div>
 
-    <div class="menu-container">
+    <div class="menu-container" id="login-screen">
+        <div class="menu-logo">🍌</div>
+        <h1 class="menu-title">Welcome!</h1>
+        <p class="menu-subtitle">Please log in to play</p>
+        
+        <div class="player-input" style="margin-bottom: 20px;">
+            <input type="text" id="login-username" placeholder="Enter Username" style="padding: 10px; font-size: 1rem; border-radius: 8px; border: 2px solid var(--banana-yellow); width: 100%;">
+        </div>
+        <div class="player-input" style="margin-bottom: 20px;">
+            <input type="password" id="login-password" placeholder="Enter Password" style="padding: 10px; font-size: 1rem; border-radius: 8px; border: 2px solid var(--banana-yellow); width: 100%;">
+        </div>
+        <div class="menu-buttons" style="gap:0.5rem; flex-direction: row;">
+            <button class="btn btn-play" onclick="handleSignIn()">Sign In</button>
+            <button class="btn btn-secondary" onclick="handleRegister()">Register</button>
+        </div>
+    </div>
+
+    <div class="menu-container" id="main-menu" style="display: none;">
         <div class="menu-logo">🍌</div>
         <h1 class="menu-title">Banana Math</h1>
-        <p class="menu-subtitle">Challenge</p>
+        <p class="menu-subtitle">Welcome, <span id="display-username">Player</span>!</p>
 
         <div class="high-score-display">
             <span class="high-score-label">🏆 Best Score</span>
             <span class="high-score-value" id="menu-high-score">0</span>
         </div>
 
+        <div style="margin-bottom: 20px; background: white; padding: 15px; border-radius: 12px; box-shadow: var(--shadow-sm);">
+            <h3 style="margin-bottom: 10px; font-size: 1rem;">Select Difficulty:</h3>
+            <select id="difficulty-select" style="padding: 10px; font-size: 1rem; border-radius: 8px; width: 100%; cursor: pointer;">
+                <option value="Easy">Easy (60 Seconds)</option>
+                <option value="Medium" selected>Medium (30 Seconds)</option>
+                <option value="Hard">Hard (15 Seconds)</option>
+            </select>
+        </div>
+
         <div class="menu-buttons">
-            <a href="game.html" class="btn btn-play">
+            <button onclick="startCustomGame()" class="btn btn-play">
                 <span>🎮</span> Play Now
-            </a>
+            </button>
             <a href="how_to_play.html" class="btn btn-secondary">
                 <span>📖</span> How to Play
             </a>
             <a href="leaderboard.html" class="btn btn-secondary">
                 <span>🏅</span> Leaderboard
             </a>
-        </div>
-
-        <div class="menu-stats">
-            <div class="stat-box">
-                <span class="stat-number" id="games-played">0</span>
-                <span class="stat-label">Games Played</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-number" id="total-correct">0</span>
-                <span class="stat-label">Total Solved</span>
-            </div>
+            <button onclick="handleLogout()" class="btn btn-secondary" style="background: var(--error-light); color: var(--error); border-color: var(--error);">
+                <span>🚪</span> Logout
+            </button>
         </div>
     </div>
 
-    <footer class="menu-footer">
-        <p>Powered by <a href="https://marcconrad.com/uob/banana/" target="_blank">Banana API</a></p>
-    </footer>
-
     <script src="script.js"></script>
-    <script>
-        // Menu specific initialization
-        document.addEventListener('DOMContentLoaded', () => {
-            loadMenuStats();
-        });
-    </script>
 </body>
 </html>

@@ -1,22 +1,11 @@
 /* ============================================
-   BANANA MATH CHALLENGE - GAME LOGIC
-   ============================================ */
-
-/* ============================================
-   CONFIGURATION
+   CONFIGURATION & COOKIES
    ============================================ */
 const CONFIG = {
-    // Banana API Configuration
-    API_BASE: 'https://marcconrad.com/uob/banana/api',
-    API_ENDPOINT: 'https://marcconrad.com/uob/banana/',
-    
-    // Game Settings
-    GAME_DURATION: 30, // seconds
+    API_ENDPOINT: 'https://marcconrad.com/uob/banana/api.php',
     POINTS_PER_CORRECT: 10,
     STREAK_BONUS: 5,
     SKIP_PENALTY: 2,
-    
-    // Storage Keys
     STORAGE_KEYS: {
         HIGH_SCORE: 'banana_high_score',
         TOTAL_GAMES: 'banana_total_games',
@@ -24,6 +13,53 @@ const CONFIG = {
         LEADERBOARD: 'banana_leaderboard'
     }
 };
+
+// Cookie Management
+function setCookie(name, value, days) {
+    let expires = "";
+    if (days) {
+        let date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "")  + expires + "; path=/; SameSite=Strict";
+}
+
+// transparent session helpers with fallback when cookies are disabled
+function setSession(username) {
+    if (navigator.cookieEnabled) {
+        setCookie("banana_session", username, 1);
+    } else {
+        localStorage.setItem("banana_session", username);
+    }
+}
+
+function getSession() {
+    if (navigator.cookieEnabled) {
+        return getCookie("banana_session");
+    }
+    return localStorage.getItem("banana_session");
+}
+
+function clearSession() {
+    if (navigator.cookieEnabled) eraseCookie("banana_session");
+    localStorage.removeItem("banana_session");
+}
+
+function getCookie(name) {
+    let nameEQ = name + "=";
+    let ca = document.cookie.split(';');
+    for(let i=0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
+}
+
+function eraseCookie(name) {
+    document.cookie = name + '=; Max-Age=-99999999; path=/;';
+}
 
 /* ============================================
    GAME STATE
@@ -36,522 +72,374 @@ let gameState = {
     puzzlesAttempted: 0,
     currentPuzzle: null,
     timer: null,
-    timeLeft: CONFIG.GAME_DURATION,
+    timeLeft: 30, // Default, will be overwritten by difficulty
+    difficulty: 'Medium',
     isPlaying: false,
     isAnswering: false
 };
 
-/* ============================================
-   DOM ELEMENTS
-   ============================================ */
-let elements = {
-    // Menu
-    menuHighScore: null,
-    gamesPlayed: null,
-    totalCorrect: null,
-    
-    // Game
-    gameTimer: null,
-    timerDisplay: null,
-    currentScore: null,
-    currentStreak: null,
-    bestStreak: null,
-    puzzleCount: null,
-    difficultyBadge: null,
-    puzzleImage: null,
-    loadingSpinner: null,
-    answerInput: null,
-    submitBtn: null,
-    skipBtn: null,
-    feedbackContainer: null,
-    feedbackSuccess: null,
-    feedbackError: null,
-    pointsEarned: null,
-    correctAnswer: null,
-    gameOverModal: null,
-    finalScore: null,
-    finalPuzzles: null,
-    finalStreak: null,
-    finalAccuracy: null,
-    newHighScoreBadge: null,
-    
-    // How To
-    howtoContainer: null,
-    
-    // Scores
-    leaderboard: null
-};
+let elements = {};
 
 /* ============================================
    INITIALIZATION
    ============================================ */
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize based on current page
-    if (document.querySelector('.menu-container')) {
-        initMenu();
+    if (document.getElementById('login-screen')) {
+        initAuth();
     } else if (document.querySelector('.game-container')) {
         initGame();
-    } else if (document.querySelector('.howto-container')) {
-        initHowTo();
-    } else if (document.querySelector('.scores-page')) {
-        initScores();
     }
-    
-    // Setup event listeners
     setupEventListeners();
 });
 
 /* ============================================
-   MENU PAGE INITIALIZATION
+   AUTH & MENU LOGIC
    ============================================ */
-function initMenu() {
-    elements.menuHighScore = document.getElementById('menu-high-score');
-    elements.gamesPlayed = document.getElementById('games-played');
-    elements.totalCorrect = document.getElementById('total-correct');
-    
-    loadMenuStats();
+function initAuth() {
+    const currentUser = getSession();
+    if (currentUser) {
+        showMainMenu(currentUser);
+    } else {
+        document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('main-menu').style.display = 'none';
+    }
 }
 
-function loadMenuStats() {
-    const highScore = getStorage(CONFIG.STORAGE_KEYS.HIGH_SCORE) || 0;
-    const totalGames = getStorage(CONFIG.STORAGE_KEYS.TOTAL_GAMES) || 0;
-    const totalCorrect = getStorage(CONFIG.STORAGE_KEYS.TOTAL_CORRECT) || 0;
+function handleSignIn() {
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    if (!username) {
+        alert("Please enter a username!");
+        return;
+    }
+    if (!password) {
+        alert("Please enter a password!");
+        return;
+    }
+
+    // simple in-browser credential store using localStorage
+    let users = JSON.parse(localStorage.getItem('banana_users')) || {};
+
+    if (!users[username] || users[username] !== password) {
+        alert('Incorrect username or password.');
+        return;
+    }
+
+    // set session through helper
+    setSession(username);
+    // username stored in session or banana_player if needed
+    showMainMenu(username);
+}
+
+function handleRegister() {
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    if (!username) {
+        alert("Please enter a username!");
+        return;
+    }
+    if (!password) {
+        alert("Please enter a password!");
+        return;
+    }
+
+    let users = JSON.parse(localStorage.getItem('banana_users')) || {};
+    if (users[username]) {
+        alert('Username already exists. Please sign in instead.');
+        return;
+    }
+
+    // register new user
+    users[username] = password;
+    localStorage.setItem('banana_users', JSON.stringify(users));
+
+    // automatically sign them in after registration
+    setSession(username);
+    showMainMenu(username);
+}
+
+function handleLogout() {
+    clearSession();
+    window.location.reload();
+}
+
+function showMainMenu(username) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-menu').style.display = 'flex';
+    document.getElementById('display-username').textContent = username;
     
-    if (elements.menuHighScore) elements.menuHighScore.textContent = highScore;
-    if (elements.gamesPlayed) elements.gamesPlayed.textContent = totalGames;
-    if (elements.totalCorrect) elements.totalCorrect.textContent = totalCorrect;
+    elements.menuHighScore = document.getElementById('menu-high-score');
+    if (elements.menuHighScore) {
+        elements.menuHighScore.textContent = getStorage(CONFIG.STORAGE_KEYS.HIGH_SCORE) || 0;
+    }
+}
+
+function startCustomGame() {
+    const selectedDifficulty = document.getElementById('difficulty-select').value;
+    localStorage.setItem('banana_chosen_difficulty', selectedDifficulty);
+    window.location.href = 'game.html';
 }
 
 /* ============================================
-   GAME PAGE INITIALIZATION
+   GAME LOGIC
    ============================================ */
 function initGame() {
-    // Get DOM elements
-    elements.gameTimer = document.getElementById('game-timer');
-    elements.timerDisplay = document.getElementById('timer-display');
-    elements.currentScore = document.getElementById('current-score');
-    elements.currentStreak = document.getElementById('current-streak');
-    elements.bestStreak = document.getElementById('best-streak');
-    elements.puzzleCount = document.getElementById('puzzle-count');
-    elements.difficultyBadge = document.getElementById('difficulty-badge');
-    elements.puzzleImage = document.getElementById('puzzle-image');
-    elements.loadingSpinner = document.getElementById('loading-spinner');
-    elements.answerInput = document.getElementById('answer-input');
-    elements.submitBtn = document.getElementById('submit-btn');
-    elements.skipBtn = document.getElementById('skip-btn');
-    elements.feedbackContainer = document.getElementById('feedback-container');
-    elements.feedbackSuccess = document.getElementById('feedback-success');
-    elements.feedbackError = document.getElementById('feedback-error');
-    elements.pointsEarned = document.getElementById('points-earned');
-    elements.correctAnswer = document.getElementById('correct-answer');
-    elements.gameOverModal = document.getElementById('game-over-modal');
-    elements.finalScore = document.getElementById('final-score');
-    elements.finalPuzzles = document.getElementById('final-puzzles');
-    elements.finalStreak = document.getElementById('final-streak');
-    elements.finalAccuracy = document.getElementById('final-accuracy');
-    elements.newHighScoreBadge = document.getElementById('new-high-score-badge');
+    // Kick out users who aren't logged in
+    if (!getCookie("banana_session")) {
+        window.location.href = 'index.html';
+        return;
+    }
+
+    elements = {
+        gameTimer: document.getElementById('game-timer'),
+        timerDisplay: document.getElementById('timer-display'),
+        currentScore: document.getElementById('current-score'),
+        currentStreak: document.getElementById('current-streak'),
+        bestStreak: document.getElementById('best-streak'),
+        puzzleCount: document.getElementById('puzzle-count'),
+        difficultyBadge: document.getElementById('difficulty-badge'),
+        puzzleImage: document.getElementById('puzzle-image'),
+        loadingSpinner: document.getElementById('loading-spinner'),
+        answerInput: document.getElementById('answer-input'),
+        submitBtn: document.getElementById('submit-btn'),
+        skipBtn: document.getElementById('skip-btn'),
+        feedbackContainer: document.getElementById('feedback-container'),
+        feedbackSuccess: document.getElementById('feedback-success'),
+        feedbackError: document.getElementById('feedback-error'),
+        pointsEarned: document.getElementById('points-earned'),
+        correctAnswer: document.getElementById('correct-answer'),
+        gameOverModal: document.getElementById('game-over-modal'),
+        finalScore: document.getElementById('final-score')
+    };
     
-    // Reset game state
+    // Set up difficulty and timer
+    gameState.difficulty = localStorage.getItem('banana_chosen_difficulty') || 'Medium';
+    let duration = 30;
+    if (gameState.difficulty === 'Easy') duration = 60;
+    if (gameState.difficulty === 'Hard') duration = 15;
+    
+    gameState.timeLeft = duration;
+    
     resetGameState();
-    
-    // Load best streak from storage
-    const savedBestStreak = getStorage(CONFIG.STORAGE_KEYS.HIGH_SCORE) || 0;
-    if (elements.bestStreak) elements.bestStreak.textContent = savedBestStreak;
-    
-    // Start game
     startGame();
 }
 
 function resetGameState() {
-    gameState = {
-        score: 0,
-        streak: 0,
-        bestStreak: 0,
-        puzzlesSolved: 0,
-        puzzlesAttempted: 0,
-        currentPuzzle: null,
-        timer: null,
-        timeLeft: CONFIG.GAME_DURATION,
-        isPlaying: false,
-        isAnswering: false
-    };
-    
-    updateScoreDisplay();
-    hideFeedback();
-    elements.newHighScoreBadge.style.display = 'none';
+    if (gameState.timer) clearInterval(gameState.timer);
+    gameState.score = 0;
+    gameState.streak = 0;
+    gameState.bestStreak = 0;
+    gameState.puzzlesSolved = 0;
+    gameState.puzzlesAttempted = 0;
+    gameState.isPlaying = false;
+    gameState.isAnswering = false;
 }
 
 function startGame() {
     gameState.isPlaying = true;
-    gameState.timeLeft = CONFIG.GAME_DURATION;
-    
-    // Start timer
     gameState.timer = setInterval(updateTimer, 1000);
-    
-    // Load first puzzle
     loadPuzzle();
-    
-    // Enable input
-    elements.answerInput.disabled = false;
-    elements.submitBtn.disabled = false;
-    elements.skipBtn.disabled = false;
-    elements.answerInput.focus();
 }
 
 function updateTimer() {
+    if (!gameState.isPlaying) return;
     gameState.timeLeft--;
     
-    if (elements.timerDisplay) {
-        elements.timerDisplay.textContent = gameState.timeLeft;
-    }
+    if (elements.timerDisplay) elements.timerDisplay.textContent = gameState.timeLeft;
     
-    // Update timer styling based on time remaining
     if (elements.gameTimer) {
         elements.gameTimer.classList.remove('warning', 'danger');
-        if (gameState.timeLeft <= 10) {
-            elements.gameTimer.classList.add('danger');
-        } else if (gameState.timeLeft <= 20) {
-            elements.gameTimer.classList.add('warning');
-        }
+        if (gameState.timeLeft <= 10) elements.gameTimer.classList.add('danger');
+        else if (gameState.timeLeft <= 20) elements.gameTimer.classList.add('warning');
     }
     
-    // Game over
     if (gameState.timeLeft <= 0) {
-        endGame();
+        endGame('time');
     }
 }
 
-/* ============================================
-   PUZZLE LOGIC
-   ============================================ */
 async function loadPuzzle() {
-    // Show loading
     elements.loadingSpinner.classList.remove('hidden');
     elements.puzzleImage.style.opacity = '0.5';
     elements.answerInput.value = '';
     elements.answerInput.disabled = true;
-    elements.submitBtn.disabled = true;
-    hideFeedback();
+    if (elements.submitBtn) elements.submitBtn.disabled = true;
     
     try {
-        // Fetch puzzle from Banana API
-        const puzzle = await fetchPuzzle();
-        gameState.currentPuzzle = puzzle;
+        const response = await fetch(CONFIG.API_ENDPOINT);
+        const data = await response.json();
         
-        // Update puzzle display
-        if (elements.puzzleImage) {
-            elements.puzzleImage.src = puzzle.image;
-            elements.puzzleImage.style.opacity = '1';
-        }
+        if (!gameState.isPlaying) return;
+
+        gameState.currentPuzzle = {
+            image: data.question,
+            answer: data.solution,
+            difficulty: gameState.difficulty
+        };
         
-        if (elements.puzzleCount) {
-            elements.puzzleCount.textContent = gameState.puzzlesSolved + 1;
-        }
+        elements.puzzleImage.src = gameState.currentPuzzle.image;
+        elements.puzzleImage.style.opacity = '1';
+        elements.difficultyBadge.textContent = gameState.difficulty;
+        elements.difficultyBadge.className = 'puzzle-difficulty ' + gameState.difficulty.toLowerCase();
         
-        if (elements.difficultyBadge) {
-            elements.difficultyBadge.textContent = puzzle.difficulty;
-            elements.difficultyBadge.className = 'puzzle-difficulty ' + puzzle.difficulty.toLowerCase();
-        }
-        
-        // Enable input
         elements.answerInput.disabled = false;
-        elements.submitBtn.disabled = false;
         elements.answerInput.focus();
-        
     } catch (error) {
-        console.error('Error loading puzzle:', error);
-        showError('Failed to load puzzle. Please try again.');
+        console.error('API Error:', error);
     } finally {
         elements.loadingSpinner.classList.add('hidden');
     }
 }
 
-async function fetchPuzzle() {
-    try {
-        // Try direct API call first
-        const response = await fetch(CONFIG.API_ENDPOINT);
-        
-        if (!response.ok) {
-            throw new Error('API request failed');
-        }
-        
-        const data = await response.json();
-        
-        // Return puzzle data
-        return {
-            image: data.image || 'https://via.placeholder.com/400x200?text=Banana+Puzzle',
-            answer: data.answer || 0,
-            difficulty: data.difficulty || 'Easy',
-            question: data.question || 'Solve this!'
-        };
-        
-    } catch (error) {
-        // Fallback to demo puzzle
-        console.warn('Using demo puzzle:', error);
-        return {
-            image: 'https://via.placeholder.com/400x200?text=Banana+Math',
-            answer: Math.floor(Math.random() * 10) + 1,
-            difficulty: getRandomDifficulty(),
-            question: 'Demo Puzzle'
-        };
-    }
-}
-
-function getRandomDifficulty() {
-    const difficulties = ['Easy', 'Medium', 'Hard'];
-    return difficulties[Math.floor(Math.random() * difficulties.length)];
-}
-
-/* ============================================
-   ANSWER LOGIC
-   ============================================ */
 function submitAnswer() {
     if (!gameState.isPlaying || gameState.isAnswering) return;
-    
     const userAnswer = parseInt(elements.answerInput.value);
     
-    if (isNaN(userAnswer)) {
-        showError('Please enter a valid number');
-        return;
-    }
+    if (isNaN(userAnswer)) return;
     
     gameState.isAnswering = true;
-    elements.answerInput.disabled = true;
-    elements.submitBtn.disabled = true;
-    elements.skipBtn.disabled = true;
-    
     gameState.puzzlesAttempted++;
     
-    // Check answer
     if (userAnswer === gameState.currentPuzzle.answer) {
-        handleCorrectAnswer(userAnswer);
+        gameState.score += CONFIG.POINTS_PER_CORRECT + (gameState.streak * CONFIG.STREAK_BONUS);
+        gameState.streak++;
+        gameState.puzzlesSolved++;
+        if (gameState.streak > gameState.bestStreak) gameState.bestStreak = gameState.streak;
+        
+        elements.feedbackSuccess.classList.add('show');
     } else {
-        handleWrongAnswer(userAnswer);
-    }
-}
-
-function handleCorrectAnswer(userAnswer) {
-    // Calculate points
-    const points = CONFIG.POINTS_PER_CORRECT + (gameState.streak * CONFIG.STREAK_BONUS);
-    gameState.score += points;
-    gameState.streak++;
-    gameState.puzzlesSolved++;
-    
-    // Update best streak
-    if (gameState.streak > gameState.bestStreak) {
-        gameState.bestStreak = gameState.streak;
+        gameState.streak = 0;
+        elements.feedbackError.classList.add('show');
+        elements.correctAnswer.textContent = gameState.currentPuzzle.answer;
     }
     
-    // Update display
     updateScoreDisplay();
-    showSuccessFeedback(points);
-    playSound('correct');
     
-    // Animate image
-    if (elements.puzzleImage) {
-        elements.puzzleImage.classList.add('correct');
-        setTimeout(() => elements.puzzleImage.classList.remove('correct'), 500);
-    }
-    
-    // Save stats
-    saveStats();
-    
-    // Load next puzzle after delay
     setTimeout(() => {
+        elements.feedbackSuccess.classList.remove('show');
+        elements.feedbackError.classList.remove('show');
         gameState.isAnswering = false;
-        loadPuzzle();
+        if(gameState.isPlaying) loadPuzzle();
     }, 1500);
 }
 
-function handleWrongAnswer(userAnswer) {
-    gameState.streak = 0;
-    gameState.puzzlesAttempted++;
-    
-    // Update display
-    updateScoreDisplay();
-    showErrorFeedback(gameState.currentPuzzle.answer);
-    playSound('wrong');
-    
-    // Animate image
-    if (elements.puzzleImage) {
-        elements.puzzleImage.classList.add('shake');
-        setTimeout(() => elements.puzzleImage.classList.remove('shake'), 500);
-    }
-    
-    // Load next puzzle after delay
-    setTimeout(() => {
-        gameState.isAnswering = false;
-        loadPuzzle();
-    }, 2000);
-}
-
 function skipPuzzle() {
-    if (!gameState.isPlaying || gameState.isAnswering) return;
-    
+    if (!gameState.isPlaying) return;
     gameState.streak = 0;
     gameState.score -= CONFIG.SKIP_PENALTY;
-    gameState.puzzlesAttempted++;
-    
     updateScoreDisplay();
-    showSkipFeedback();
-    
-    setTimeout(() => {
-        gameState.isAnswering = false;
-        loadPuzzle();
-    }, 1000);
+    loadPuzzle();
 }
 
-/* ============================================
-   GAME OVER
-   ============================================ */
-function endGame() {
+function endGame(reason) {
+    if (!gameState.isPlaying) return;
     clearInterval(gameState.timer);
     gameState.isPlaying = false;
-    
-    // Calculate accuracy
-    const accuracy = gameState.puzzlesAttempted > 0 
-        ? Math.round((gameState.puzzlesSolved / gameState.puzzlesAttempted) * 100) 
-        : 0;
-    
-    // Update final stats
+
+    // disable controls
+    if (elements.answerInput) elements.answerInput.disabled = true;
+    if (elements.submitBtn) elements.submitBtn.disabled = true;
+    if (elements.skipBtn) elements.skipBtn.disabled = true;
+    const endBtn = document.getElementById('end-btn');
+    if (endBtn) endBtn.disabled = true;
+
+    // fill modal stats
     if (elements.finalScore) elements.finalScore.textContent = gameState.score;
-    if (elements.finalPuzzles) elements.finalPuzzles.textContent = gameState.puzzlesSolved;
-    if (elements.finalStreak) elements.finalStreak.textContent = gameState.bestStreak;
-    if (elements.finalAccuracy) elements.finalAccuracy.textContent = accuracy + '%';
-    
-    // Check for new high score
-    const currentHighScore = getStorage(CONFIG.STORAGE_KEYS.HIGH_SCORE) || 0;
+    const puzzlesEl = document.getElementById('final-puzzles');
+    const streakEl = document.getElementById('final-streak');
+    const accuracyEl = document.getElementById('final-accuracy');
+    if (puzzlesEl) puzzlesEl.textContent = gameState.puzzlesSolved;
+    if (streakEl) streakEl.textContent = gameState.bestStreak;
+    if (accuracyEl) {
+        const percent = gameState.puzzlesAttempted > 0 ?
+            Math.round((gameState.puzzlesSolved / gameState.puzzlesAttempted) * 100) : 0;
+        accuracyEl.textContent = percent + "%";
+    }
+
+    // show optional message
+    const msgEl = document.getElementById('game-over-message');
+    if (msgEl) {
+        if (reason === 'manual') msgEl.textContent = "Game ended early!";
+        else if (reason === 'time') msgEl.textContent = "Time's up!";
+        else msgEl.textContent = "Game over!";
+    }
+
+    elements.gameOverModal.classList.add('active');
+
+    let currentHighScore = getStorage(CONFIG.STORAGE_KEYS.HIGH_SCORE) || 0;
     if (gameState.score > currentHighScore) {
         setStorage(CONFIG.STORAGE_KEYS.HIGH_SCORE, gameState.score);
-        if (elements.newHighScoreBadge) {
-            elements.newHighScoreBadge.style.display = 'block';
-        }
+        if (elements.newHighScoreBadge) elements.newHighScoreBadge.style.display = 'block';
+    } else {
+        if (elements.newHighScoreBadge) elements.newHighScoreBadge.style.display = 'none';
     }
     
-    // Save stats
-    saveStats();
-    
-    // Show game over modal
-    if (elements.gameOverModal) {
-        elements.gameOverModal.classList.add('active');
-    }
+    saveLeaderboardScore();
 }
 
-/* ============================================
-   SCORE DISPLAY
-   ============================================ */
 function updateScoreDisplay() {
     if (elements.currentScore) elements.currentScore.textContent = gameState.score;
     if (elements.currentStreak) elements.currentStreak.textContent = gameState.streak;
     if (elements.bestStreak) elements.bestStreak.textContent = gameState.bestStreak;
 }
 
-/* ============================================
-   FEEDBACK DISPLAY
-   ============================================ */
-function showSuccessFeedback(points) {
-    hideFeedback();
-    
-    if (elements.feedbackSuccess) {
-        elements.feedbackSuccess.classList.add('show');
-        if (elements.pointsEarned) elements.pointsEarned.textContent = points;
+function getStorage(key) { return JSON.parse(localStorage.getItem(key)) || null; }
+function setStorage(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+
+function saveLeaderboardScore() {
+    let name = getCookie("banana_session") || "Player";
+    let scores = JSON.parse(localStorage.getItem("banana_leaderboard")) || [];
+    scores.push({ name: name, score: gameState.score });
+    scores.sort((a,b) => b.score - a.score);
+    localStorage.setItem("banana_leaderboard", JSON.stringify(scores));
+}
+
+// used by leaderboard.html to populate table
+function loadLeaderboard() {
+    const table = document.getElementById("leaderboard-body");
+    if (!table) return;
+    let scores = JSON.parse(localStorage.getItem("banana_leaderboard")) || [];
+    scores.sort((a,b) => b.score - a.score);
+    table.innerHTML = "";
+    scores.forEach((player,index)=>{
+        const row=document.createElement("tr");
+        row.innerHTML=`
+                    <td>${index+1}</td>
+                    <td>${player.name}</td>
+                    <td>${player.score}</td>
+                `;
+        table.appendChild(row);
+    });
+}
+
+function clearLeaderboard() {
+    if (confirm("Are you sure you want to clear the leaderboard? This cannot be undone.")) {
+        localStorage.removeItem("banana_leaderboard");
+        loadLeaderboard();
     }
 }
 
-function showErrorFeedback(correctAnswer) {
-    hideFeedback();
-    
-    if (elements.feedbackError) {
-        elements.feedbackError.classList.add('show');
-        if (elements.correctAnswer) elements.correctAnswer.textContent = correctAnswer;
-    }
-}
-
-function showSkipFeedback() {
-    hideFeedback();
-    // Could add skip feedback here
-}
-
-function showError(message) {
-    hideFeedback();
-    // Could add error feedback here
-    console.error(message);
-}
-
-function hideFeedback() {
-    if (elements.feedbackSuccess) elements.feedbackSuccess.classList.remove('show');
-    if (elements.feedbackError) elements.feedbackError.classList.remove('show');
-}
-
-/* ============================================
-   STORAGE UTILITIES
-   ============================================ */
-function getStorage(key) {
-    try {
-        return JSON.parse(localStorage.getItem(key)) || null;
-    } catch (e) {
-        console.error('Error reading storage:', e);
-        return null;
-    }
-}
-
-function setStorage(key, value) {
-    try {
-        localStorage.setItem(key, JSON.stringify(value));
-    } catch (e) {
-        console.error('Error writing storage:', e);
-    }
-}
-
-function saveStats() {
-    // Update total games
-    const totalGames = getStorage(CONFIG.STORAGE_KEYS.TOTAL_GAMES) || 0;
-    setStorage(CONFIG.STORAGE_KEYS.TOTAL_GAMES, totalGames + 1);
-    
-    // Update total correct
-    const totalCorrect = getStorage(CONFIG.STORAGE_KEYS.TOTAL_CORRECT) || 0;
-    setStorage(CONFIG.STORAGE_KEYS.TOTAL_CORRECT, totalCorrect + gameState.puzzlesSolved);
-}
-
-/* ============================================
-   SOUND EFFECTS
-   ============================================ */
-function playSound(type) {
-    // Simple beep using Web Audio API
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    if (type === 'correct') {
-        oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
-        oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
-        oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2); // G5
-    } else if (type === 'wrong') {
-        oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
-        oscillator.frequency.setValueAtTime(150, audioContext.currentTime + 0.1);
-    }
-    
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-    
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.3);
-}
-
-/* ============================================
-   EVENT LISTENERS
-   ============================================ */
 function setupEventListeners() {
-    // Submit button
-    const submitBtn = document.getElementById('submit-btn');
-    if (submitBtn) {
-        submitBtn.addEventListener('click', submitAnswer);
-    }
-    
-    // Skip button
-    const skipBtn = document.getElementById();
+    const submitBtnEl = document.getElementById("submit-btn");
+    const skipBtnEl = document.getElementById("skip-btn");
+    const answerInputEl = document.getElementById("answer-input");
 
+    if (submitBtnEl) {
+        submitBtnEl.addEventListener("click", submitAnswer);
+        // disable initially, will be enabled when input has something
+        submitBtnEl.disabled = true;
     }
+    if (skipBtnEl) skipBtnEl.addEventListener("click", skipPuzzle);
+    if (answerInputEl) {
+        answerInputEl.addEventListener("keypress", (e) => {
+            if(e.key === "Enter") submitAnswer();
+        });
+        answerInputEl.addEventListener("input", () => {
+            if (submitBtnEl) {
+                submitBtnEl.disabled = answerInputEl.value.trim() === '';
+            }
+        });
+    }
+}
