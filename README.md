@@ -1,6 +1,6 @@
-# Banana Math Challenge - Week 4
+# Banana Math Challenge - Week 5
 
-This folder represents the project progress for week 4.
+This folder represents the project progress for week 5.
 
 Files included:
 index.html/css/js, design, game.html/css/js, script
