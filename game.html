@@ -73,6 +73,9 @@
                     <button class="btn btn-skip" id="skip-btn">
                         ⏭️ Skip
                     </button>
+                    <button class="btn btn-secondary" id="end-btn" onclick="endGame()">
+                        🏁 End Game
+                    </button>
                 </div>
             </div>
 
@@ -84,7 +87,7 @@
                 </div>
                 <div class="feedback error" id="feedback-error">
                     <span class="feedback-icon">😢</span>
-                    <span class="feedback-text">Wrong! Answer: <span id="correct-answer">0</span></span>
+                    <span class="feedback-text">Wrong! Correct answer is <span id="correct-answer">0</span></span>
                 </div>
             </div>
 
@@ -111,8 +114,11 @@
                             <span class="final-stat-label">Accuracy</span>
                         </div>
                     </div>
+                    <div class="game-over-message" id="game-over-message">
+                        <!-- dynamic message inserted here -->
+                    </div>
                     <div class="new-high-score-badge" id="new-high-score-badge" style="display: none;">
-                        🌟 New High Score! 🌟
+                        � New High Score! 🍌
                     </div>
                     <div class="modal-buttons">
                         <a href="game.html" class="btn btn-play">🔄 Play Again</a>
