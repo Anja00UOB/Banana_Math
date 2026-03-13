@@ -5,15 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leaderboard - Banana Math 🍌</title>
     <link rel="stylesheet" href="design.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍌</text></svg>">
 </head>
+
 <body class="scores-page">
-    <!-- Floating Background -->
-    <div class="floating-bananas">
-        <span class="float-banana" style="left: 5%; top: 15%; animation-delay: 0s;">🍌</span>
-        <span class="float-banana" style="left: 20%; top: 70%; animation-delay: 2s;">🍌</span>
-        <span class="float-banana" style="left: 70%; top: 25%; animation-delay: 1s;">🍌</span>
-        <span class="float-banana" style="left: 90%; top: 80%; animation-delay: 3s;">🍌
+
+    <div class="menu-container">
+
+        <h1>🏆 Leaderboard</h1>
+
+        <div class="player-input">
+            <label>Enter Player Name</label>
+            <input id="player-name" type="text" placeholder="Your name">
+            <button class="btn btn-secondary" onclick="savePlayer()">Save Name</button>
+        </div>
+
+        <table class="leaderboard-table" style="width: 100%; margin: 20px 0; text-align: center;">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Name</th>
+                    <th>Score</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboard-body">
+            </tbody>
+        </table>
+
+        <div style="margin-top:1rem;">
+            <button class="btn btn-secondary" onclick="clearLeaderboard()">🗑️ Clear Leaderboard</button>
+        </div>
+        <br>
+        <a href="index.html" class="btn btn-secondary">⬅ Back to Menu</a>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        function savePlayer(){
+            const name = document.getElementById("player-name").value || "Player";
+            localStorage.setItem("banana_player", name);
+            alert("Player name saved! It will be used automatically next time.");
+        }
+
+        document.addEventListener("DOMContentLoaded", loadLeaderboard);
+    </script>
+</body>
+</html>
