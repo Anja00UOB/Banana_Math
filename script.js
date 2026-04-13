@@ -1,6 +1,4 @@
-/* ============================================
-   CONFIGURATION & COOKIES
-   ============================================ */
+/* CONFIGURATION & COOKIES */
 const CONFIG = {
     API_ENDPOINT: 'https://marcconrad.com/uob/banana/api.php',
     POINTS_PER_CORRECT: 10,
