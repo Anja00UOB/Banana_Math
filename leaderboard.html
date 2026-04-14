@@ -5,32 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leaderboard - Banana Math 🍌</title>
     <link rel="stylesheet" href="design.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍌</text></svg>">
 </head>
 
 <body class="scores-page">
+    <div class="floating-bananas">
+        <span class="float-banana" style="left: 8%; top: 15%; animation-delay: 0s;">🍌</span>
+        <span class="float-banana" style="left: 75%; top: 60%; animation-delay: 1.5s;">🍌</span>
+        <span class="float-banana" style="left: 45%; top: 5%; animation-delay: 3s;">🍌</span>
+    </div>
 
     <div class="menu-container">
-
         <h1>🏆 Leaderboard</h1>
 
-        <table class="leaderboard-table" style="width: 100%; margin: 20px 0; text-align: center;">
-            <thead>
-                <tr>
-                    <th>Rank</th>
-                    <th>Name</th>
-                    <th>Score</th>
-                </tr>
-            </thead>
-            <tbody id="leaderboard-body">
-            </tbody>
-        </table>
-
-        <div style="margin-top:1rem; display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
-            <a href="game.html" class="btn btn-play">🎮 Play Now</a>
-            <button class="btn btn-secondary" onclick="clearLeaderboard()">🗑️ Clear Leaderboard</button>
+        <!-- Scrollable Leaderboard Container -->
+        <div class="leaderboard-scroll-container">
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player Name</th>
+                        <th>Score</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-body">
+                    <!-- Leaderboard entries populated by JavaScript -->
+                </tbody>
+            </table>
         </div>
-        <br>
-        <a href="index.html" class="btn btn-secondary">⬅ Back to Menu</a>
+
+        <!-- Always Visible Controls -->
+        <div class="leaderboard-controls">
+            <a href="game.html" class="btn btn-play">🎮 Play Now</a>
+            <button class="btn btn-secondary" onclick="clearLeaderboard()">🗑️ Clear</button>
+            <a href="index.html" class="btn btn-secondary">⬅ Menu</a>
+        </div>
     </div>
 
     <script src="script.js"></script>
