@@ -12,56 +12,55 @@ const CONFIG = {
     }
 };
 
-// Cookie Management
-function setCookie(name, value, days) {
-    let expires = "";
-    if (days) {
-        let date = new Date();
-        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-        expires = "; expires=" + date.toUTCString();
-    }
-    document.cookie = name + "=" + (value || "")  + expires + "; path=/; SameSite=Strict";
-}
-
-// transparent session helpers with fallback when cookies are disabled
-function setSession(username) {
+// Session Storage Management System for Banana Game
+function persistPlayerSession(playerUsername) {
+    const sessionExpiryDays = 1;
+    const expiryConfig = buildExpiryTimestamp(sessionExpiryDays);
+    
     if (navigator.cookieEnabled) {
-        setCookie("banana_session", username, 1);
+        const formattedCookieString = `banana_active_player=${playerUsername}${expiryConfig}; path=/; SameSite=Strict`;
+        document.cookie = formattedCookieString;
     } else {
-        localStorage.setItem("banana_session", username);
+        localStorage.setItem("playerSession", playerUsername);
     }
 }
 
-function getSession() {
+function retrievePlayerSession() {
     if (navigator.cookieEnabled) {
-        return getCookie("banana_session");
+        return extractSessionFromCookies("banana_active_player");
     }
-    return localStorage.getItem("banana_session");
+    return localStorage.getItem("playerSession");
 }
 
-function clearSession() {
-    if (navigator.cookieEnabled) eraseCookie("banana_session");
-    localStorage.removeItem("banana_session");
+function terminatePlayerSession() {
+    if (navigator.cookieEnabled) {
+        document.cookie = 'banana_active_player=; Max-Age=-99999999; path=/;';
+    }
+    localStorage.removeItem("playerSession");
 }
 
-function getCookie(name) {
-    let nameEQ = name + "=";
-    let ca = document.cookie.split(';');
-    for(let i=0; i < ca.length; i++) {
-        let c = ca[i];
-        while (c.charAt(0) == ' ') c = c.substring(1, c.length);
-        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+function buildExpiryTimestamp(daysValid) {
+    if (!daysValid) return "";
+    const futureDate = new Date();
+    futureDate.setTime(futureDate.getTime() + (daysValid * 24 * 60 * 60 * 1000));
+    return `; expires=${futureDate.toUTCString()}`;
+}
+
+function extractSessionFromCookies(cookieName) {
+    const cookieSearchKey = `${cookieName}=`;
+    const allCookies = document.cookie.split(';');
+    
+    for (let cookieChunk of allCookies) {
+        cookieChunk = cookieChunk.replace(/^\s+/, '');
+        if (cookieChunk.startsWith(cookieSearchKey)) {
+            return cookieChunk.substring(cookieSearchKey.length);
+        }
     }
     return null;
 }
 
-function eraseCookie(name) {
-    document.cookie = name + '=; Max-Age=-99999999; path=/;';
-}
+//GAME STATE MANAGEMENT
 
-/* ============================================
-   GAME STATE
-   ============================================ */
 let gameState = {
     score: 0,
     streak: 0,
@@ -78,9 +77,7 @@ let gameState = {
 
 let elements = {};
 
-/* ============================================
-   INITIALIZATION
-   ============================================ */
+//INITIALIZATION LOGIC
 document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('login-screen')) {
         initAuth();
@@ -90,13 +87,11 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
 });
 
-/* ============================================
-   AUTH & MENU LOGIC
-   ============================================ */
+//AUTH & MENU LOGIC - Banana Game Authentication System
 function initAuth() {
-    const currentUser = getSession();
-    if (currentUser) {
-        showMainMenu(currentUser);
+    const authenticatedPlayer = retrievePlayerSession();
+    if (authenticatedPlayer) {
+        displayPlayerMainMenu(authenticatedPlayer);
     } else {
         document.getElementById('login-screen').style.display = 'flex';
         document.getElementById('main-menu').style.display = 'none';
@@ -104,73 +99,72 @@ function initAuth() {
 }
 
 function handleSignIn() {
-    const username = document.getElementById('login-username').value.trim();
-    const password = document.getElementById('login-password').value;
+    const inputUsername = document.getElementById('login-username').value.trim();
+    const inputPassword = document.getElementById('login-password').value;
 
-    if (!username) {
+    if (!inputUsername) {
         alert("Please enter a username!");
         return;
     }
-    if (!password) {
+    if (!inputPassword) {
         alert("Please enter a password!");
         return;
     }
 
-    // simple in-browser credential store using localStorage
-    let users = JSON.parse(localStorage.getItem('banana_users')) || {};
+    // Access banana game player registry from local storage
+    const playerRegistry = JSON.parse(localStorage.getItem('banana_player_registry')) || {};
 
-    if (!users[username] || users[username] !== password) {
+    if (!playerRegistry[inputUsername] || playerRegistry[inputUsername] !== inputPassword) {
         alert('Incorrect username or password.');
         return;
     }
 
-    // set session through helper
-    setSession(username);
-    // username stored in session or banana_player if needed
-    showMainMenu(username);
+    // Establish active player session through helper system
+    persistPlayerSession(inputUsername);
+    displayPlayerMainMenu(inputUsername);
 }
 
 function handleRegister() {
-    const username = document.getElementById('login-username').value.trim();
-    const password = document.getElementById('login-password').value;
+    const inputUsername = document.getElementById('login-username').value.trim();
+    const inputPassword = document.getElementById('login-password').value;
 
-    if (!username) {
+    if (!inputUsername) {
         alert("Please enter a username!");
         return;
     }
-    if (!password) {
+    if (!inputPassword) {
         alert("Please enter a password!");
         return;
     }
 
-    let users = JSON.parse(localStorage.getItem('banana_users')) || {};
-    if (users[username]) {
+    const playerRegistry = JSON.parse(localStorage.getItem('banana_player_registry')) || {};
+    if (playerRegistry[inputUsername]) {
         alert('Username already exists. Please sign in instead.');
         return;
     }
 
-    // register new user
-    users[username] = password;
-    localStorage.setItem('banana_users', JSON.stringify(users));
+    // Register new player account in registry
+    playerRegistry[inputUsername] = inputPassword;
+    localStorage.setItem('banana_player_registry', JSON.stringify(playerRegistry));
 
-    // automatically sign them in after registration
-    setSession(username);
-    showMainMenu(username);
+    // Automatically authenticate player after successful registration
+    persistPlayerSession(inputUsername);
+    displayPlayerMainMenu(inputUsername);
 }
 
 function handleLogout() {
-    clearSession();
+    terminatePlayerSession();
     window.location.reload();
 }
 
-function showMainMenu(username) {
+function displayPlayerMainMenu(playerName) {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('main-menu').style.display = 'flex';
-    document.getElementById('display-username').textContent = username;
+    document.getElementById('display-username').textContent = playerName;
     
     elements.menuHighScore = document.getElementById('menu-high-score');
     if (elements.menuHighScore) {
-        elements.menuHighScore.textContent = getStorage(CONFIG.STORAGE_KEYS.HIGH_SCORE) || 0;
+        elements.menuHighScore.textContent = retrieveGameMetric(CONFIG.STORAGE_KEYS.HIGH_SCORE) || 0;
     }
 }
 
@@ -184,8 +178,8 @@ function startCustomGame() {
    GAME LOGIC
    ============================================ */
 function initGame() {
-    // Kick out users who aren't logged in
-    if (!getCookie("banana_session")) {
+    // Verify player authentication before launching game
+    if (!extractSessionFromCookies("banana_active_player")) {
         window.location.href = 'index.html';
         return;
     }
@@ -212,13 +206,14 @@ function initGame() {
         finalScore: document.getElementById('final-score')
     };
     
-    // Set up difficulty and timer
+    // Configure game difficulty settings and time constraints
     gameState.difficulty = localStorage.getItem('banana_chosen_difficulty') || 'Medium';
-    let duration = 30;
-    if (gameState.difficulty === 'Easy') duration = 60;
-    if (gameState.difficulty === 'Hard') duration = 15;
-    
-    gameState.timeLeft = duration;
+    const timeConstraintMap = {
+        'Easy': 60,
+        'Medium': 30,
+        'Hard': 15
+    };
+    gameState.timeLeft = timeConstraintMap[gameState.difficulty] || 30;
     
     resetGameState();
     startGame();
@@ -237,11 +232,11 @@ function resetGameState() {
 
 function startGame() {
     gameState.isPlaying = true;
-    gameState.timer = setInterval(updateTimer, 1000);
-    loadPuzzle();
+    gameState.timer = setInterval(decrementGameTimer, 1000);
+    fetchNextPuzzle();
 }
 
-function updateTimer() {
+function decrementGameTimer() {
     if (!gameState.isPlaying) return;
     gameState.timeLeft--;
     
@@ -254,11 +249,11 @@ function updateTimer() {
     }
     
     if (gameState.timeLeft <= 0) {
-        endGame('time');
+        terminateGame('time');
     }
 }
 
-async function loadPuzzle() {
+async function fetchNextPuzzle() {
     elements.loadingSpinner.classList.remove('hidden');
     elements.puzzleImage.style.opacity = '0.5';
     elements.answerInput.value = '';
@@ -266,14 +261,14 @@ async function loadPuzzle() {
     if (elements.submitBtn) elements.submitBtn.disabled = true;
     
     try {
-        const response = await fetch(CONFIG.API_ENDPOINT);
-        const data = await response.json();
+        const apiResponse = await fetch(CONFIG.API_ENDPOINT);
+        const puzzleData = await apiResponse.json();
         
         if (!gameState.isPlaying) return;
 
         gameState.currentPuzzle = {
-            image: data.question,
-            answer: data.solution,
+            image: puzzleData.question,
+            answer: puzzleData.solution,
             difficulty: gameState.difficulty
         };
         
@@ -285,7 +280,7 @@ async function loadPuzzle() {
         elements.answerInput.disabled = false;
         elements.answerInput.focus();
     } catch (error) {
-        console.error('API Error:', error);
+        console.error('Puzzle API Error:', error);
     } finally {
         elements.loadingSpinner.classList.add('hidden');
     }
@@ -293,14 +288,14 @@ async function loadPuzzle() {
 
 function submitAnswer() {
     if (!gameState.isPlaying || gameState.isAnswering) return;
-    const userAnswer = parseInt(elements.answerInput.value);
+    const playerProvidedAnswer = parseInt(elements.answerInput.value);
     
-    if (isNaN(userAnswer)) return;
+    if (isNaN(playerProvidedAnswer)) return;
     
     gameState.isAnswering = true;
     gameState.puzzlesAttempted++;
     
-    if (userAnswer === gameState.currentPuzzle.answer) {
+    if (playerProvidedAnswer === gameState.currentPuzzle.answer) {
         gameState.score += CONFIG.POINTS_PER_CORRECT + (gameState.streak * CONFIG.STREAK_BONUS);
         gameState.streak++;
         gameState.puzzlesSolved++;
@@ -319,7 +314,7 @@ function submitAnswer() {
         elements.feedbackSuccess.classList.remove('show');
         elements.feedbackError.classList.remove('show');
         gameState.isAnswering = false;
-        if(gameState.isPlaying) loadPuzzle();
+        if(gameState.isPlaying) fetchNextPuzzle();
     }, 1500);
 }
 
@@ -328,22 +323,22 @@ function skipPuzzle() {
     gameState.streak = 0;
     gameState.score -= CONFIG.SKIP_PENALTY;
     updateScoreDisplay();
-    loadPuzzle();
+    fetchNextPuzzle();
 }
 
-function endGame(reason) {
+function terminateGame(exitReason) {
     if (!gameState.isPlaying) return;
     clearInterval(gameState.timer);
     gameState.isPlaying = false;
 
-    // disable controls
+    // Disable all game interaction controls
     if (elements.answerInput) elements.answerInput.disabled = true;
     if (elements.submitBtn) elements.submitBtn.disabled = true;
     if (elements.skipBtn) elements.skipBtn.disabled = true;
     const endBtn = document.getElementById('end-btn');
     if (endBtn) endBtn.disabled = true;
 
-    // fill modal stats
+    // Populate game statistics in results modal
     if (elements.finalScore) elements.finalScore.textContent = gameState.score;
     const puzzlesEl = document.getElementById('final-puzzles');
     const streakEl = document.getElementById('final-streak');
@@ -351,30 +346,30 @@ function endGame(reason) {
     if (puzzlesEl) puzzlesEl.textContent = gameState.puzzlesSolved;
     if (streakEl) streakEl.textContent = gameState.bestStreak;
     if (accuracyEl) {
-        const percent = gameState.puzzlesAttempted > 0 ?
+        const computedAccuracy = gameState.puzzlesAttempted > 0 ?
             Math.round((gameState.puzzlesSolved / gameState.puzzlesAttempted) * 100) : 0;
-        accuracyEl.textContent = percent + "%";
+        accuracyEl.textContent = computedAccuracy + "%";
     }
 
-    // show optional message
+    // Show contextual end game message
     const msgEl = document.getElementById('game-over-message');
     if (msgEl) {
-        if (reason === 'manual') msgEl.textContent = "Game ended early!";
-        else if (reason === 'time') msgEl.textContent = "Time's up!";
+        if (exitReason === 'manual') msgEl.textContent = "Game ended early!";
+        else if (exitReason === 'time') msgEl.textContent = "Time's up!";
         else msgEl.textContent = "Game over!";
     }
 
     elements.gameOverModal.classList.add('active');
 
-    let currentHighScore = getStorage(CONFIG.STORAGE_KEYS.HIGH_SCORE) || 0;
+    let currentHighScore = retrieveGameMetric(CONFIG.STORAGE_KEYS.HIGH_SCORE) || 0;
     if (gameState.score > currentHighScore) {
-        setStorage(CONFIG.STORAGE_KEYS.HIGH_SCORE, gameState.score);
+        storeGameMetric(CONFIG.STORAGE_KEYS.HIGH_SCORE, gameState.score);
         if (elements.newHighScoreBadge) elements.newHighScoreBadge.style.display = 'block';
     } else {
         if (elements.newHighScoreBadge) elements.newHighScoreBadge.style.display = 'none';
     }
     
-    saveLeaderboardScore();
+    persistPlayerScore();
 }
 
 function updateScoreDisplay() {
@@ -383,30 +378,35 @@ function updateScoreDisplay() {
     if (elements.bestStreak) elements.bestStreak.textContent = gameState.bestStreak;
 }
 
-function getStorage(key) { return JSON.parse(localStorage.getItem(key)) || null; }
-function setStorage(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
-
-function saveLeaderboardScore() {
-    let name = getCookie("banana_session") || "Player";
-    let scores = JSON.parse(localStorage.getItem("banana_leaderboard")) || [];
-    scores.push({ name: name, score: gameState.score });
-    scores.sort((a,b) => b.score - a.score);
-    localStorage.setItem("banana_leaderboard", JSON.stringify(scores));
+function retrieveGameMetric(metricKey) { 
+    return JSON.parse(localStorage.getItem(metricKey)) || null; 
 }
 
-// used by leaderboard.html to populate table
+function storeGameMetric(metricKey, metricValue) { 
+    localStorage.setItem(metricKey, JSON.stringify(metricValue)); 
+}
+
+function persistPlayerScore() {
+    let activePlayerName = extractSessionFromCookies("banana_active_player") || "Player";
+    let leaderboardEntries = JSON.parse(localStorage.getItem("banana_leaderboard")) || [];
+    leaderboardEntries.push({ name: activePlayerName, score: gameState.score });
+    leaderboardEntries.sort((playerA, playerB) => playerB.score - playerA.score);
+    localStorage.setItem("banana_leaderboard", JSON.stringify(leaderboardEntries));
+}
+
+// Populates leaderboard table (called by leaderboard.html)
 function loadLeaderboard() {
     const table = document.getElementById("leaderboard-body");
     if (!table) return;
-    let scores = JSON.parse(localStorage.getItem("banana_leaderboard")) || [];
-    scores.sort((a,b) => b.score - a.score);
+    let leaderboardEntries = JSON.parse(localStorage.getItem("banana_leaderboard")) || [];
+    leaderboardEntries.sort((playerA, playerB) => playerB.score - playerA.score);
     table.innerHTML = "";
-    scores.forEach((player,index)=>{
-        const row=document.createElement("tr");
-        row.innerHTML=`
-                    <td>${index+1}</td>
-                    <td>${player.name}</td>
-                    <td>${player.score}</td>
+    leaderboardEntries.forEach((entry, rank) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+                    <td>${rank + 1}</td>
+                    <td>${entry.name}</td>
+                    <td>${entry.score}</td>
                 `;
         table.appendChild(row);
     });
@@ -426,7 +426,7 @@ function setupEventListeners() {
 
     if (submitBtnEl) {
         submitBtnEl.addEventListener("click", submitAnswer);
-        // disable initially, will be enabled when input has something
+        // Button starts disabled until user provides input
         submitBtnEl.disabled = true;
     }
     if (skipBtnEl) skipBtnEl.addEventListener("click", skipPuzzle);
