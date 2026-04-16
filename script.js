@@ -1,4 +1,4 @@
-/* CONFIGURATION & COOKIES */
+//CONFIGURATION & COOKIES
 const CONFIG = {
     API_ENDPOINT: 'https://marcconrad.com/uob/banana/api.php',
     POINTS_PER_CORRECT: 10,
@@ -60,7 +60,6 @@ function extractSessionFromCookies(cookieName) {
 }
 
 //GAME STATE MANAGEMENT
-
 let gameState = {
     score: 0,
     streak: 0,
@@ -69,7 +68,7 @@ let gameState = {
     puzzlesAttempted: 0,
     currentPuzzle: null,
     timer: null,
-    timeLeft: 30, // Default, will be overwritten by difficulty
+    timeLeft: 30, // Default 30s, will be overwritten by difficulty selection
     difficulty: 'Medium',
     isPlaying: false,
     isAnswering: false
@@ -174,16 +173,14 @@ function startCustomGame() {
     window.location.href = 'game.html';
 }
 
-/* ============================================
-   GAME LOGIC
-   ============================================ */
+//GAME LOGIC
 function initGame() {
     // Verify player authentication before launching game
     if (!extractSessionFromCookies("banana_active_player")) {
         window.location.href = 'index.html';
         return;
     }
-
+    //DOM element references for game interaction and display updates
     elements = {
         gameTimer: document.getElementById('game-timer'),
         timerDisplay: document.getElementById('timer-display'),
